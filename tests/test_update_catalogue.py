@@ -46,6 +46,36 @@ class CatalogueValidationTests(unittest.TestCase):
         with self.assertRaises(MODULE.CatalogueError):
             MODULE.validate_catalogue([])
 
+    def test_download_retries_transient_network_errors(self):
+        class FakeResponse:
+            status = 200
+            def __enter__(self):
+                return self
+            def __exit__(self, *args):
+                return False
+            def read(self):
+                return b"[]"
+
+        calls = []
+        def flaky_urlopen(request, timeout):
+            calls.append(timeout)
+            if len(calls) < 3:
+                raise MODULE.URLError("temporary timeout")
+            return FakeResponse()
+
+        original_urlopen = MODULE.urlopen
+        original_sleep = MODULE.time.sleep
+        try:
+            MODULE.urlopen = flaky_urlopen
+            MODULE.time.sleep = lambda seconds: None
+            payload = MODULE.download_json(attempts=5, timeout=180)
+        finally:
+            MODULE.urlopen = original_urlopen
+            MODULE.time.sleep = original_sleep
+
+        self.assertEqual(payload, b"[]")
+        self.assertEqual(calls, [180, 180, 180])
+
     def test_publish_creates_manifest_and_snapshot(self):
         payload = json.dumps([valid_record()]).encode("utf-8")
         with tempfile.TemporaryDirectory() as temp:
