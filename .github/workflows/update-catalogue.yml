@@ -36,12 +36,17 @@ jobs:
 
       - name: Commit updated catalogue
         run: |
-          if git diff --quiet; then
+          # Include untracked snapshots and manifest as well as modified files.
+          if [ -z "$(git status --porcelain --untracked-files=all)" ]; then
             echo "Catalogue unchanged; no commit required."
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add latest.json data/
+          if git diff --cached --quiet; then
+            echo "No catalogue changes to commit."
+            exit 0
+          fi
           git commit -m "data: refresh validated satellite catalogue"
           git push
