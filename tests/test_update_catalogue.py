@@ -32,6 +32,12 @@ class CatalogueValidationTests(unittest.TestCase):
         self.assertEqual(len(records), 1)
         self.assertEqual(newest, "2026-11-15T00:00:00Z")
 
+    def test_epoch_without_timezone_is_treated_as_utc(self):
+        record = valid_record()
+        record["EPOCH"] = "2026-11-15T06:23:28.204224"
+        _, newest = MODULE.validate_catalogue([record])
+        self.assertEqual(newest, "2026-11-15T06:23:28.204224Z")
+
     def test_duplicate_norad_id_rejected(self):
         with self.assertRaises(MODULE.CatalogueError):
             MODULE.validate_catalogue([valid_record(), valid_record()])
