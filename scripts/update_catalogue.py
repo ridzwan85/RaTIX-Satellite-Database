@@ -37,8 +37,10 @@ def parse_epoch(value: Any) -> datetime:
         parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
     except ValueError as exc:
         raise CatalogueError(f"Invalid EPOCH: {value!r}") from exc
+    # CelesTrak GP JSON emits UTC epochs, sometimes without an explicit
+    # timezone suffix. Treat a naive upstream epoch as UTC by source contract.
     if parsed.tzinfo is None:
-        raise CatalogueError(f"EPOCH has no timezone: {value!r}")
+        parsed = parsed.replace(tzinfo=timezone.utc)
     return parsed.astimezone(timezone.utc)
 
 
