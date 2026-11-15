@@ -88,23 +88,36 @@ def validate_catalogue(records: Any) -> tuple[list[dict[str, Any]], str]:
     return clean, newest_epoch.isoformat().replace("+00:00", "Z")
 
 
-def download_json(url: str = SOURCE_URL, attempts: int = 3) -> bytes:
+def download_json(url: str = SOURCE_URL, attempts: int = 5, timeout: int = 180) -> bytes:
+    """Fetch the upstream catalogue with a generous timeout and bounded backoff."""
     last_error: Exception | None = None
+    retryable_http_statuses = {408, 425, 429, 500, 502, 503, 504}
     for attempt in range(attempts):
         try:
             request = Request(url, headers={"User-Agent": USER_AGENT, "Accept": "application/json"})
-            with urlopen(request, timeout=90) as response:
+            with urlopen(request, timeout=timeout) as response:
                 if response.status != 200:
                     raise CatalogueError(f"Upstream returned HTTP {response.status}")
                 payload = response.read()
             if not payload:
                 raise CatalogueError("Upstream returned an empty response")
             return payload
-        except (HTTPError, URLError, TimeoutError, CatalogueError) as exc:
+        except HTTPError as exc:
             last_error = exc
-            if attempt + 1 < attempts:
-                time.sleep(2 ** attempt)
-    raise CatalogueError(f"Unable to fetch CelesTrak data after {attempts} attempts: {last_error}")
+            if exc.code not in retryable_http_statuses:
+                raise CatalogueError(f"Non-retryable upstream HTTP {exc.code}: {exc.reason}") from exc
+        except (URLError, TimeoutError) as exc:
+            last_error = exc
+
+        if attempt + 1 < attempts:
+            delay = min(60, 2 ** (attempt + 1))
+            print(f"Upstream fetch attempt {attempt + 1}/{attempts} failed: {last_error}; retrying in {delay}s")
+            time.sleep(delay)
+
+    raise CatalogueError(
+        f"Unable to fetch CelesTrak data after {attempts} attempts "
+        f"(timeout={timeout}s): {last_error}"
+    )
 
 
 def atomic_write(path: Path, content: bytes) -> None:
