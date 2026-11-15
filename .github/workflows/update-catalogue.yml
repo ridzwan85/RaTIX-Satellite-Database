@@ -3,6 +3,7 @@ name: Update satellite catalogue
 on:
   push:
     branches:
+      - main
       - feature/bootstrap-celestrak-database
   schedule:
     - cron: "17 */6 * * *"
