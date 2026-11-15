@@ -1,0 +1,11 @@
+{
+  "file": "data/active-20261115T150836Z.json",
+  "format": "CelesTrak GP JSON",
+  "latest_epoch_utc": "2026-11-16T22:29:56.971680Z",
+  "record_count": 16894,
+  "schema_version": 1,
+  "sha256": "113f5a332e072499b25a5a8df8d7735a9ef77dab37309599a1fccd8c86929b95",
+  "source": "CelesTrak GP active group",
+  "source_url": "https://celestrak.org/NORAD/elements/gp.php?GROUP=active&FORMAT=json",
+  "updated_at_utc": "2026-11-15T15:08:36.802915Z"
+}
