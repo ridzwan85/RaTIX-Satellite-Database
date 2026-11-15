@@ -1,0 +1,52 @@
+name: Update satellite catalogue
+
+on:
+  push:
+    branches:
+      - feature/bootstrap-celestrak-database
+  schedule:
+    - cron: "17 */6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: satellite-catalogue-update
+  cancel-in-progress: false
+
+jobs:
+  update-catalogue:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run offline validation tests
+        run: python -m unittest discover -s tests -v
+
+      - name: Fetch, validate and publish latest catalogue
+        run: python scripts/update_catalogue.py
+
+      - name: Commit updated catalogue
+        run: |
+          # Include untracked snapshots and manifest as well as modified files.
+          if [ -z "$(git status --porcelain --untracked-files=all)" ]; then
+            echo "Catalogue unchanged; no commit required."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add latest.json data/
+          if git diff --cached --quiet; then
+            echo "No catalogue changes to commit."
+            exit 0
+          fi
+          git commit -m "data: refresh validated satellite catalogue"
+          git push
