@@ -151,7 +151,7 @@ def download_json(url: str = SOURCE_URL, attempts: int = 5, timeout: int = 180) 
     retryable_http_statuses = {408, 425, 429, 500, 502, 503, 504}
     for attempt in range(attempts):
         try:
-            request = Request(url, headers={"User-Agent": USER_AGENT, "Accept": "application/json"})
+            request = Request(url, headers={"User-Agent": USER_AGENT, "Accept": "*/*"})
             with urlopen(request, timeout=timeout) as response:
                 if response.status != 200:
                     raise CatalogueError(f"Upstream returned HTTP {response.status}")
