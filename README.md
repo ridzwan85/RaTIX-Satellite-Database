@@ -5,9 +5,9 @@ Public, machine-readable orbital-element catalogue for RaTIX. The database is up
 ## Data source and refresh
 
 - Orbital elements: [CelesTrak GP active group](https://celestrak.org/NORAD/elements/gp.php?GROUP=active&FORMAT=json), in JSON/OMM format.
-- Object classification and catalogue metadata: [CelesTrak SATCAT](https://celestrak.org/satcat/records.php?GROUP=active&FORMAT=JSON), joined by NORAD catalog ID.
+- Object classification and catalogue metadata: [CelesTrak SATCAT](https://celestrak.org/pub/satcat.csv), joined by NORAD catalog ID.
 - GP and SATCAT are separate authoritative datasets; the pipeline joins them rather than expecting OBJECT_TYPE inside GP OMM.
-- Scheduled refresh every 6 hours (UTC), with a manual GitHub Actions trigger.
+- GP refresh every 6 hours (UTC), with a manual GitHub Actions trigger. SATCAT is cached locally and refreshed at most once per 24 hours.
 - Both source responses are validated before publication. Every GP record must have a valid UTC EPOCH and orbital elements; every active GP record must join to a SATCAT record with a recognized OBJECT_TYPE code.
 - Object type is sourced from SATCAT (PAY, R/B, DEB, or UNCLASSIFIED when SATCAT explicitly reports UNK). Missing joins or missing/unsupported type codes fail the entire update; no guessed classification is published.
 - SATCAT metadata source and source code are retained in each enriched record.
