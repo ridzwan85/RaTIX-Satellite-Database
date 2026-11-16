@@ -297,6 +297,20 @@ def main() -> int:
             raise CatalogueError(f"SATCAT response is not valid UTF-8 CSV: {exc}") from exc
         if not satcat_records:
             raise CatalogueError("SATCAT CSV contained no catalogue records")
+        if use_cached_satcat and (
+            hashlib.sha256(satcat_payload).hexdigest() != cache_meta.get("sha256")
+            or len(satcat_records) != cache_meta.get("record_count")
+        ):
+            # A cache with a mismatched digest or row count is never trusted.
+            use_cached_satcat = False
+            satcat_payload = download_json(SATCAT_SOURCE_URL)
+            try:
+                satcat_text = satcat_payload.decode("utf-8-sig")
+                satcat_records = list(csv.DictReader(io.StringIO(satcat_text)))
+            except (UnicodeDecodeError, csv.Error) as exc:
+                raise CatalogueError(f"SATCAT refresh is not valid UTF-8 CSV: {exc}") from exc
+            if not satcat_records:
+                raise CatalogueError("Refreshed SATCAT CSV contained no catalogue records")
         if not use_cached_satcat and not args.satcat_input:
             atomic_write(satcat_cache, satcat_payload)
             cache_meta = {
