@@ -1,12 +1,12 @@
 {
-  "file": "data/active-20261116T011623Z.json",
+  "file": "data/active-20261116T062559Z.json",
   "format": "CelesTrak GP JSON",
-  "latest_epoch_utc": "2026-11-16T22:29:56.970816Z",
+  "latest_epoch_utc": "2026-11-18T18:07:56.018208Z",
   "metadata_source_url": "https://celestrak.org/pub/satcat.csv",
   "record_count": 16894,
   "schema_version": 1,
-  "sha256": "2554bded2dc2e4d405229496004df932e698496e5e5feb249f817ee6e232fa90",
+  "sha256": "204e892152871349f10ccb19e046d2672a14b4a71770fa8102f40d503f01e12b",
   "source": "CelesTrak GP active group + SATCAT metadata",
   "source_url": "https://celestrak.org/NORAD/elements/gp.php?GROUP=active&FORMAT=json",
-  "updated_at_utc": "2026-11-16T01:16:23.809734Z"
+  "updated_at_utc": "2026-11-16T06:25:59.703192Z"
 }
