@@ -52,6 +52,39 @@ class CatalogueValidationTests(unittest.TestCase):
         with self.assertRaises(MODULE.CatalogueError):
             MODULE.validate_catalogue([])
 
+
+    def test_satcat_metadata_is_joined_by_norad_id(self):
+        gp = MODULE.validate_catalogue([valid_record()])[0]
+        satcat = [{
+            "NORAD_CAT_ID": 25544,
+            "OBJECT_TYPE": "PAY",
+            "OBJECT_ID": "1998-067A",
+            "OWNER": "ISS",
+            "OPS_STATUS_CODE": "+",
+        }]
+        enriched = MODULE.enrich_with_satcat(gp, satcat)
+        self.assertEqual(enriched[0]["OBJECT_TYPE"], "PAY")
+        self.assertEqual(enriched[0]["OBJECT_TYPE_SOURCE"], "CelesTrak SATCAT")
+        self.assertTrue(enriched[0]["SATCAT_METADATA_AVAILABLE"])
+        self.assertEqual(enriched[0]["OWNER"], "ISS")
+
+    def test_satcat_unknown_code_is_explicitly_unclassified_not_missing(self):
+        gp = MODULE.validate_catalogue([valid_record()])[0]
+        satcat = [{"NORAD_CAT_ID": 25544, "OBJECT_TYPE": "UNK"}]
+        enriched = MODULE.enrich_with_satcat(gp, satcat)
+        self.assertEqual(enriched[0]["OBJECT_TYPE"], "UNCLASSIFIED")
+        self.assertEqual(enriched[0]["OBJECT_TYPE_CODE"], "UNK")
+
+    def test_satcat_missing_match_rejects_entire_snapshot(self):
+        gp = MODULE.validate_catalogue([valid_record()])[0]
+        with self.assertRaises(MODULE.CatalogueError):
+            MODULE.enrich_with_satcat(gp, [])
+
+    def test_satcat_missing_type_rejects_entire_snapshot(self):
+        gp = MODULE.validate_catalogue([valid_record()])[0]
+        with self.assertRaises(MODULE.CatalogueError):
+            MODULE.enrich_with_satcat(gp, [{"NORAD_CAT_ID": 25544}])
+
     def test_download_retries_transient_network_errors(self):
         class FakeResponse:
             status = 200
