@@ -40,6 +40,7 @@ jobs:
         run: python scripts/update_catalogue.py
 
       - name: Commit updated catalogue
+        if: github.event_name != 'pull_request'
         run: |
           # Include untracked snapshots and manifest as well as modified files.
           if [ -z "$(git status --porcelain --untracked-files=all)" ]; then
