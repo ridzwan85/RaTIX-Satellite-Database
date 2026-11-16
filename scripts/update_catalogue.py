@@ -89,8 +89,13 @@ def validate_catalogue(records: Any) -> tuple[list[dict[str, Any]], str]:
             raise CatalogueError(f"Record {index} has invalid MEAN_ANOMALY")
         epoch = parse_epoch(record["EPOCH"])
         newest_epoch = epoch if newest_epoch is None else max(newest_epoch, epoch)
+        normalized = dict(record)
+        normalized["EPOCH"] = epoch.isoformat().replace("+00:00", "Z")
+        normalized["EPOCH_SOURCE"] = "CelesTrak GP/OMM"
+        normalized["EPOCH_TIME_SYSTEM"] = "UTC"
+        normalized["ORBIT_DATA_SOURCE"] = "CelesTrak GP active group"
         seen.add(norad_id)
-        clean.append(record)
+        clean.append(normalized)
     assert newest_epoch is not None
     return clean, newest_epoch.isoformat().replace("+00:00", "Z")
 
