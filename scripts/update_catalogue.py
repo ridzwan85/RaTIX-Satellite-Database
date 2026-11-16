@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import argparse
+import csv
+import io
 import hashlib
 import json
 import os
@@ -17,7 +19,8 @@ from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
 SOURCE_URL = "https://celestrak.org/NORAD/elements/gp.php?GROUP=active&FORMAT=json"
-SATCAT_SOURCE_URL = "https://celestrak.org/satcat/records.php?GROUP=active&FORMAT=JSON"
+SATCAT_SOURCE_URL = "https://celestrak.org/pub/satcat.csv"
+SATCAT_CACHE_MAX_AGE_SECONDS = 24 * 60 * 60
 SATCAT_TYPE_LABELS = {"PAY": "PAY", "R/B": "R/B", "DEB": "DEB", "UNK": "UNCLASSIFIED"}
 USER_AGENT = "RaTIX-Satellite-Database/1.0 (+https://github.com/ridzwan85/RaTIX-Satellite-Database)"
 REQUIRED_FIELDS = (
@@ -253,16 +256,55 @@ def main() -> int:
     args = parser.parse_args()
     try:
         payload = args.input.read_bytes() if args.input else download_json()
-        satcat_payload = (
-            args.satcat_input.read_bytes()
-            if args.satcat_input
-            else download_json(SATCAT_SOURCE_URL)
-        )
         try:
             gp_records = json.loads(payload.decode("utf-8"))
-            satcat_records = json.loads(satcat_payload.decode("utf-8"))
         except (UnicodeDecodeError, json.JSONDecodeError) as exc:
-            raise CatalogueError(f"Upstream response is not valid UTF-8 JSON: {exc}") from exc
+            raise CatalogueError(f"GP response is not valid UTF-8 JSON: {exc}") from exc
+
+        satcat_cache = args.root / "data" / "satcat.csv"
+        satcat_cache_meta = args.root / "data" / "satcat-cache.json"
+        satcat_payload: bytes
+        use_cached_satcat = False
+        if args.satcat_input:
+            satcat_payload = args.satcat_input.read_bytes()
+        elif satcat_cache.exists() and satcat_cache_meta.exists():
+            try:
+                cache_meta = json.loads(satcat_cache_meta.read_text(encoding="utf-8"))
+                cached_at = datetime.fromisoformat(
+                    cache_meta["downloaded_at_utc"].replace("Z", "+00:00")
+                )
+                use_cached_satcat = (
+                    datetime.now(timezone.utc) - cached_at
+                ).total_seconds() < SATCAT_CACHE_MAX_AGE_SECONDS
+            except (OSError, KeyError, TypeError, ValueError, json.JSONDecodeError):
+                use_cached_satcat = False
+            if use_cached_satcat:
+                satcat_payload = satcat_cache.read_bytes()
+            else:
+                satcat_payload = download_json(SATCAT_SOURCE_URL)
+        else:
+            satcat_payload = download_json(SATCAT_SOURCE_URL)
+
+        try:
+            satcat_text = satcat_payload.decode("utf-8-sig")
+            satcat_records = list(csv.DictReader(io.StringIO(satcat_text)))
+        except (UnicodeDecodeError, csv.Error) as exc:
+            raise CatalogueError(f"SATCAT response is not valid UTF-8 CSV: {exc}") from exc
+        if not satcat_records:
+            raise CatalogueError("SATCAT CSV contained no catalogue records")
+        if not use_cached_satcat and not args.satcat_input:
+            atomic_write(satcat_cache, satcat_payload)
+            cache_meta = {
+                "source": "CelesTrak SATCAT CSV",
+                "source_url": SATCAT_SOURCE_URL,
+                "downloaded_at_utc": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+                "sha256": hashlib.sha256(satcat_payload).hexdigest(),
+                "record_count": len(satcat_records),
+            }
+            atomic_write(
+                satcat_cache_meta,
+                (json.dumps(cache_meta, indent=2, sort_keys=True) + "\n").encode("utf-8"),
+            )
         validated_gp, _ = validate_catalogue(gp_records)
         enriched = enrich_with_satcat(validated_gp, satcat_records)
         enriched_payload = (json.dumps(enriched, separators=(",", ":"), ensure_ascii=False) + "\\n").encode("utf-8")
