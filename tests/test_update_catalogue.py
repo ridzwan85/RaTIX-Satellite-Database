@@ -37,6 +37,9 @@ class CatalogueValidationTests(unittest.TestCase):
         record["EPOCH"] = "2026-11-15T06:23:28.204224"
         _, newest = MODULE.validate_catalogue([record])
         self.assertEqual(newest, "2026-11-15T06:23:28.204224Z")
+        self.assertEqual(records[0]["EPOCH"], "2026-11-15T06:23:28.204224Z")
+        self.assertEqual(records[0]["EPOCH_SOURCE"], "CelesTrak GP/OMM")
+        self.assertEqual(records[0]["EPOCH_TIME_SYSTEM"], "UTC")
 
     def test_duplicate_norad_id_rejected(self):
         with self.assertRaises(MODULE.CatalogueError):
