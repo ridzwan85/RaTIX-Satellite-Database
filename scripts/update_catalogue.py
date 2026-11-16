@@ -252,7 +252,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--root", type=Path, default=Path(__file__).resolve().parents[1])
     parser.add_argument("--input", type=Path, help="Use a local GP JSON fixture instead of fetching CelesTrak")
-    parser.add_argument("--satcat-input", type=Path, help="Use a local SATCAT JSON fixture instead of fetching CelesTrak")
+    parser.add_argument("--satcat-input", type=Path, help="Use a local SATCAT CSV fixture instead of fetching CelesTrak")
     args = parser.parse_args()
     try:
         payload = args.input.read_bytes() if args.input else download_json()
@@ -307,7 +307,7 @@ def main() -> int:
             )
         validated_gp, _ = validate_catalogue(gp_records)
         enriched = enrich_with_satcat(validated_gp, satcat_records)
-        enriched_payload = (json.dumps(enriched, separators=(",", ":"), ensure_ascii=False) + "\\n").encode("utf-8")
+        enriched_payload = (json.dumps(enriched, separators=(",", ":"), ensure_ascii=False) + "\n").encode("utf-8")
         publish(enriched_payload, args.root)
     except (OSError, CatalogueError) as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
