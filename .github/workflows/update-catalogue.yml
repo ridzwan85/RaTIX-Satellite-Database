@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - feature/bootstrap-celestrak-database
+      - feature/enrich-gp-with-satcat-metadata
   pull_request:
     branches:
       - main
