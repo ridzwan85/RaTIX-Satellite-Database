@@ -1,7 +1,7 @@
 {
-  "downloaded_at_utc": "2026-11-21T19:14:35.840703Z",
-  "record_count": 71413,
-  "sha256": "3be7212553e1e396e3c9cae5342c60f42a4d4741005c020f0be022d94beeb27b",
+  "downloaded_at_utc": "2026-11-22T19:38:21.940041Z",
+  "record_count": 71423,
+  "sha256": "7404491fb01653e6870c0b3f81c5b43ef74b99c3f2e67147adf8ebbe298c4256",
   "source": "CelesTrak SATCAT CSV",
   "source_url": "https://celestrak.org/pub/satcat.csv"
 }
